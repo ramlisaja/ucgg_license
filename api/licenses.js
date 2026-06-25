@@ -11,7 +11,6 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Auth
   const authHeader = req.headers.authorization;
   if (!authHeader || authHeader !== 'Bearer ucgg_super_secret_2024') {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -19,7 +18,6 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // Ambil semua license
       const keys = await redis.keys('license:*');
       const licenses = [];
       for (const k of keys) {
@@ -29,7 +27,6 @@ export default async function handler(req, res) {
       return res.json({ success: true, licenses });
     }
     else if (req.method === 'POST') {
-      // Generate license baru
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let groups = [];
       for (let i = 0; i < 4; i++) {
@@ -91,4 +88,4 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
-  }
+    }
