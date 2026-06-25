@@ -36,7 +36,7 @@ export default async function handler(req, res) {
         }
         groups.push(group);
       }
-      const newKey = groups.join('-');
+      const newKey = 'UCGG-' + groups.join('-');
       
       const expiryDays = req.body.expiryDays || 30;
       const newLicense = {
