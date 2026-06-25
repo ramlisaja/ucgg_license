@@ -1,8 +1,7 @@
-import { Redis } from '@upstash/redis';
+const fs = require('fs');
+const path = require('path');
 
-const redis = Redis.fromEnv();
-
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PUT');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -16,17 +15,27 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  const filePath = path.join(__dirname, '../licenses.json');
+
   try {
-    if (req.method === 'GET') {
-      const keys = await redis.keys('license:*');
-      const licenses = [];
-      for (const k of keys) {
-        const license = await redis.get(k);
-        if (license) licenses.push(license);
+    let licenses = [];
+    try {
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      licenses = JSON.parse(fileContent);
+      if (!Array.isArray(licenses)) {
+        licenses = [];
       }
+    } catch (e) {
+      licenses = [];
+    }
+
+    // GET - Lihat semua license
+    if (req.method === 'GET') {
       return res.json({ success: true, licenses });
     }
-    else if (req.method === 'POST') {
+
+    // POST - Buat license baru
+    if (req.method === 'POST') {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let groups = [];
       for (let i = 0; i < 4; i++) {
@@ -37,55 +46,60 @@ export default async function handler(req, res) {
         groups.push(group);
       }
       const newKey = 'UCGG-' + groups.join('-');
-      
-      const expiryDays = req.body.expiryDays || 30;
+
+      const expiryDays = parseInt(req.body?.expiryDays) || 30;
       const newLicense = {
         key: newKey,
         createdAt: new Date().toISOString(),
         expiryDate: new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000).toISOString(),
         status: 'active',
-        plan: req.body.plan || 'premium',
-        note: req.body.note || '',
-        maxUses: req.body.maxUses || 99999,
+        plan: req.body?.plan || 'premium',
+        note: req.body?.note || '',
+        maxUses: parseInt(req.body?.maxUses) || 99999,
         currentUses: 0
       };
-      
-      await redis.set(`license:${newKey}`, newLicense);
-      
-      return res.json({ success: true, license: newLicense });
+
+      licenses.push(newLicense);
+      fs.writeFileSync(filePath, JSON.stringify(licenses, null, 2));
+
+      return res.status(201).json({ success: true, license: newLicense });
     }
-    else if (req.method === 'DELETE') {
+
+    // DELETE - Hapus license
+    if (req.method === 'DELETE') {
       const key = req.query.key;
       if (!key) {
         return res.status(400).json({ error: 'License key required' });
       }
-      await redis.del(`license:${key}`);
+      licenses = licenses.filter(l => l.key !== key);
+      fs.writeFileSync(filePath, JSON.stringify(licenses, null, 2));
       return res.json({ success: true });
     }
-    else if (req.method === 'PUT') {
+
+    // PUT - Update license
+    if (req.method === 'PUT') {
       const key = req.query.key;
-      const { status, note } = req.body;
-      
+      const { status, note } = req.body || {};
+
       if (!key) {
         return res.status(400).json({ error: 'License key required' });
       }
-      
-      const license = await redis.get(`license:${key}`);
+
+      const license = licenses.find(l => l.key === key);
       if (!license) {
         return res.status(404).json({ error: 'License not found' });
       }
-      
+
       if (status) license.status = status;
       if (note) license.note = note;
-      
-      await redis.set(`license:${key}`, license);
-      
+
+      fs.writeFileSync(filePath, JSON.stringify(licenses, null, 2));
+
       return res.json({ success: true, license });
     }
-    else {
-      return res.status(405).json({ error: 'Method not allowed' });
-    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
-    }
+};
