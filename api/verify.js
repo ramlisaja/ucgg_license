@@ -1,16 +1,9 @@
 import { Redis } from '@upstash/redis';
 
-// Inisialisasi Redis
 const redis = Redis.fromEnv();
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
 
   const key = req.headers['x-license-key'] || req.query.key;
   
@@ -19,7 +12,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Ambil license dari Redis
     const license = await redis.get(`license:${key}`);
     
     if (!license) {
@@ -42,7 +34,6 @@ export default async function handler(req, res) {
       return res.status(403).json({ valid: false, error: 'License usage limit exceeded' });
     }
 
-    // Update usage
     license.currentUses += 1;
     await redis.set(`license:${key}`, license);
 
@@ -55,10 +46,9 @@ export default async function handler(req, res) {
       expiresIn: remainingDays,
       maxUses: license.maxUses,
       used: license.currentUses,
-      remaining: license.maxUses - license.currentUses,
-      message: `License valid for ${remainingDays} days`
+      remaining: license.maxUses - license.currentUses
     });
   } catch (error) {
-    res.status(500).json({ valid: false, error: 'Server error: ' + error.message });
+    res.status(500).json({ valid: false, error: 'Server error' });
   }
         }
