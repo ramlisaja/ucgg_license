@@ -5,7 +5,6 @@
     "deploy": "vercel --prod"
   },
   "dependencies": {
-    "@vercel/postgres": "^0.5.0",
-    "crypto": "^1.0.1"
+    "@upstash/redis": "^1.28.0"
   }
 }
