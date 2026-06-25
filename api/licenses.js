@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+// ========== LICENSES DI MEMORY (RAM) ==========
+let licenses = [];
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,20 +15,7 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const filePath = path.join(__dirname, '../licenses.json');
-
   try {
-    let licenses = [];
-    try {
-      const fileContent = fs.readFileSync(filePath, 'utf8');
-      licenses = JSON.parse(fileContent);
-      if (!Array.isArray(licenses)) {
-        licenses = [];
-      }
-    } catch (e) {
-      licenses = [];
-    }
-
     // GET - Lihat semua license
     if (req.method === 'GET') {
       return res.json({ success: true, licenses });
@@ -45,7 +32,7 @@ module.exports = async (req, res) => {
         }
         groups.push(group);
       }
-      const newKey = 'UCGG-' + groups.join('-');
+      const newKey = groups.join('-');
 
       const expiryDays = parseInt(req.body?.expiryDays) || 30;
       const newLicense = {
@@ -60,7 +47,6 @@ module.exports = async (req, res) => {
       };
 
       licenses.push(newLicense);
-      fs.writeFileSync(filePath, JSON.stringify(licenses, null, 2));
 
       return res.status(201).json({ success: true, license: newLicense });
     }
@@ -72,7 +58,6 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'License key required' });
       }
       licenses = licenses.filter(l => l.key !== key);
-      fs.writeFileSync(filePath, JSON.stringify(licenses, null, 2));
       return res.json({ success: true });
     }
 
@@ -92,8 +77,6 @@ module.exports = async (req, res) => {
 
       if (status) license.status = status;
       if (note) license.note = note;
-
-      fs.writeFileSync(filePath, JSON.stringify(licenses, null, 2));
 
       return res.json({ success: true, license });
     }
