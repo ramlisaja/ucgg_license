@@ -31,6 +31,7 @@ module.exports = async (req, res) => {
     return res.status(403).json({ valid: false, error: 'License usage limit exceeded' });
   }
 
+  // Update usage
   license.currentUses += 1;
   license.lastUsed = new Date().toISOString();
 
@@ -43,6 +44,7 @@ module.exports = async (req, res) => {
     expiresIn: remainingDays,
     maxUses: license.maxUses,
     used: license.currentUses,
-    remaining: license.maxUses - license.currentUses
+    remaining: license.maxUses - license.currentUses,
+    message: `License valid for ${remainingDays} days`
   });
 };
