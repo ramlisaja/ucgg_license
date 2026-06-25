@@ -1,9 +1,6 @@
 {
   "name": "ucgg-license",
   "version": "2.0.0",
-  "scripts": {
-    "deploy": "vercel --prod"
-  },
   "dependencies": {
     "@upstash/redis": "^1.28.0"
   }
