@@ -1,5 +1,5 @@
 {
-  "name": "ucgg-license",
+  "name": "ucgg_license",
   "version": "2.0.0",
   "dependencies": {
     "@upstash/redis": "^1.28.0"
