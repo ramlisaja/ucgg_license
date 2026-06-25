@@ -1,17 +1,25 @@
+// Data license hardcode (bisa ditambah manual)
+const LICENSES = [
+  {
+    key: "BTHVZ-BS34P-3SA2L-WSJJ",
+    expiryDate: "2026-07-25T05:58:43.401Z",
+    status: "active",
+    plan: "premium",
+    maxUses: 99999,
+    currentUses: 0
+  }
+];
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   
-  const licenseKey = req.headers['x-license-key'] || req.query.key;
+  const key = req.headers['x-license-key'] || req.query.key;
   
-  if (!licenseKey) {
+  if (!key) {
     return res.status(401).json({ valid: false, error: 'License key required' });
   }
 
-  if (!global.licenses) {
-    return res.status(404).json({ valid: false, error: 'No licenses found' });
-  }
-
-  const license = global.licenses.find(l => l.key === licenseKey);
+  const license = LICENSES.find(l => l.key === key);
   
   if (!license) {
     return res.status(404).json({ valid: false, error: 'Invalid license key' });
@@ -22,29 +30,24 @@ module.exports = async (req, res) => {
   }
 
   if (new Date() > new Date(license.expiryDate)) {
-    license.status = 'expired';
     return res.status(403).json({ valid: false, error: 'License has expired' });
   }
 
   if (license.currentUses >= license.maxUses) {
-    license.status = 'exhausted';
     return res.status(403).json({ valid: false, error: 'License usage limit exceeded' });
   }
 
-  // Update usage
   license.currentUses += 1;
-  license.lastUsed = new Date().toISOString();
 
   const remainingDays = Math.ceil((new Date(license.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
 
   res.json({
     valid: true,
-    key: licenseKey,
+    key: license.key,
     plan: license.plan,
     expiresIn: remainingDays,
     maxUses: license.maxUses,
     used: license.currentUses,
-    remaining: license.maxUses - license.currentUses,
-    message: `License valid for ${remainingDays} days`
+    remaining: license.maxUses - license.currentUses
   });
 };
